@@ -101,7 +101,7 @@ class Block(nn.Module):
 
 class MobileNetV3_Large(nn.Module):
     def __init__(self, heads, head_conv, final_kernel, num_classes=80 ):
-        self.heads = heads
+        
         super(MobileNetV3_Large, self).__init__()
         self.conv1 = nn.Conv2d(3, 16, kernel_size=3, stride=2, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(16)
@@ -144,6 +144,7 @@ class MobileNetV3_Large(nn.Module):
         self.bn3 = nn.BatchNorm2d(64)
         self.hs3 = hswish()
 
+        self.heads = heads
         for head in self.heads:
             classes = self.heads[head]
             if head_conv > 0:
@@ -167,44 +168,6 @@ class MobileNetV3_Large(nn.Module):
                 else:
                     fill_fc_weights(fc)
             self.__setattr__(head, fc)
-
-    def _get_deconv_cfg(self, deconv_kernel, index):
-        if deconv_kernel == 4:
-            padding = 1
-            output_padding = 0
-        elif deconv_kernel == 3:
-            padding = 1
-            output_padding = 1
-        elif deconv_kernel == 2:
-            padding = 0
-            output_padding = 0
-        return deconv_kernel, padding, output_padding
-    
-    def _make_deconv_layer(self, num_layers, num_filters, num_kernels):
-        assert num_layers == len(num_filters), 'ERROR: num_deconv_layers is different len(num_deconv_filters)'
-        assert num_layers == len(num_kernels), 'ERROR: num_deconv_layers is different len(num_deconv_filters)'
-
-        print(num_layers)
-        # import pdb; pdb.set_trace()
-        layers = []
-        for i in range(num_layers):
-            kernel, padding, output_padding = self._get_deconv_cfg(num_kernels[i], i)
-
-            planes = num_filters[i]
-            layers.append(
-                nn.ConvTranspose2d(
-                    in_channels=self.inplanes,
-                    out_channels=planes,
-                    kernel_size=kernel,
-                    stride=2,
-                    padding=padding,
-                    output_padding=output_padding,
-                    bias=self.deconv_with_bias))
-            layers.append(nn.BatchNorm2d(planes, momentum=0.1))
-            layers.append(nn.ReLU(inplace=True))
-            self.inplanes = planes
-
-        return nn.Sequential(*layers)
 
     def init_params(self):
         for m in self.modules():
@@ -231,9 +194,8 @@ class MobileNetV3_Large(nn.Module):
         # out = out.view(out.size(0), -1)
         # out = self.hs3(self.bn3(self.linear3(out)))
         # out = self.linear4(out)
-        # import pdb; pdb.set_trace()
+        
         out = self.hs3(self.bn3(self.deconv3(out)))
-
 
         ret = {}
         for head in self.heads:
@@ -274,6 +236,7 @@ class MobileNetV3_Small(nn.Module):
         self.bn3 = nn.BatchNorm2d(64)
         self.hs3 = hswish()
 
+        self.heads = heads
         for head in self.heads:
             classes = self.heads[head]
             if head_conv > 0:
@@ -298,7 +261,6 @@ class MobileNetV3_Small(nn.Module):
                     fill_fc_weights(fc)
             self.__setattr__(head, fc)
             
-
     def init_params(self):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -313,60 +275,21 @@ class MobileNetV3_Small(nn.Module):
                 if m.bias is not None:
                     init.constant_(m.bias, 0)
     
-    def _get_deconv_cfg(self, deconv_kernel, index):
-        if deconv_kernel == 4:
-            padding = 1
-            output_padding = 0
-        elif deconv_kernel == 3:
-            padding = 1
-            output_padding = 1
-        elif deconv_kernel == 2:
-            padding = 0
-            output_padding = 0
-        return deconv_kernel, padding, output_padding
-    
-    def _make_deconv_layer(self, num_layers, num_filters, num_kernels):
-        assert num_layers == len(num_filters), 'ERROR: num_deconv_layers is different len(num_deconv_filters)'
-        assert num_layers == len(num_kernels), 'ERROR: num_deconv_layers is different len(num_deconv_filters)'
-
-        print(num_layers)
-        # import pdb; pdb.set_trace()
-        layers = []
-        for i in range(num_layers):
-            kernel, padding, output_padding = self._get_deconv_cfg(num_kernels[i], i)
-
-            planes = num_filters[i]
-            layers.append(
-                nn.ConvTranspose2d(
-                    in_channels=self.inplanes,
-                    out_channels=planes,
-                    kernel_size=kernel,
-                    stride=2,
-                    padding=padding,
-                    output_padding=output_padding,
-                    bias=self.deconv_with_bias))
-            layers.append(nn.BatchNorm2d(planes, momentum=0.1))
-            layers.append(nn.ReLU(inplace=True))
-            self.inplanes = planes
-
-        return nn.Sequential(*layers)
 
     def forward(self, x):
-        print("mobilenet v3 Small forward Start")
-        import pdb; pdb.set_trace()
+        # print("mobilenet v3 Small forward Start")
+        # import pdb; pdb.set_trace()
         out = self.hs1(self.bn1(self.conv1(x)))
         out = self.bneck(out)
         out = self.hs2(self.bn2(self.conv2(out)))
         # out = F.avg_pool2d(out, 4) 
         # out = F.avg_pool2d(out, 7) 
         # out = self.hs3(self.bn3(self.conv3(out)))
-
-
         # out = out.view(out.size(0), -1)
         # out = self.hs3(self.bn3(self.linear3(out)))
         # out = self.linear4(out)
 
-        out = self.deconv_layers(out)
+        out = self.hs3(self.bn3(self.deconv3(out)))
 
         ret = {}
         for head in self.heads:
