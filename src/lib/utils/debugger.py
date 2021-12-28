@@ -45,6 +45,8 @@ class Debugger(object):
       self.names = coco_class_name
     elif num_classes == 20 or dataset == 'pascal':
       self.names = pascal_class_name
+    elif num_classes == 7 or dataset == 'truen7':
+      self.names = truen7_class_name
     elif dataset == 'gta':
       self.names = gta_class_name
       self.focal_length = 935.3074360871937
@@ -435,6 +437,9 @@ kitti_class_name = [
 gta_class_name = [
   'p', 'v'
 ]
+
+truen7_class_name = ['person', 'bicycle', 'car', 'motorcycle', 
+      'bus', 'truck', 'plate']
 
 pascal_class_name = ["aeroplane", "bicycle", "bird", "boat", "bottle", "bus", 
   "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", 

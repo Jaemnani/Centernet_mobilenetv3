@@ -100,7 +100,7 @@ class Block(nn.Module):
 
 
 class MobileNetV3_Large(nn.Module):
-    def __init__(self, heads, head_conv, final_kernel, num_classes=80 ):
+    def __init__(self, heads, head_conv, final_kernel):
         
         super(MobileNetV3_Large, self).__init__()
         self.conv1 = nn.Conv2d(3, 16, kernel_size=3, stride=2, padding=1, bias=False)
@@ -190,20 +190,15 @@ class MobileNetV3_Large(nn.Module):
         out = self.bneck2(out)
         out = self.bneck3(out)
         out = self.hs2(self.bn2(self.conv2(out)))
-        # out = F.avg_pool2d(out, 7)
-        # out = out.view(out.size(0), -1)
-        # out = self.hs3(self.bn3(self.linear3(out)))
-        # out = self.linear4(out)
-        
         out = self.hs3(self.bn3(self.deconv3(out)))
-
+        
         ret = {}
         for head in self.heads:
             ret[head] = self.__getattr__(head)(out)
         return [ret]
 
 class MobileNetV3_Small(nn.Module):
-    def __init__(self, heads, head_conv, final_kernel, num_classes=80):
+    def __init__(self, heads, head_conv, final_kernel):
         super(MobileNetV3_Small, self).__init__()
         self.conv1 = nn.Conv2d(3, 16, kernel_size=3, stride=2, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(16)
@@ -277,20 +272,10 @@ class MobileNetV3_Small(nn.Module):
     
 
     def forward(self, x):
-        # print("mobilenet v3 Small forward Start")
-        # import pdb; pdb.set_trace()
         out = self.hs1(self.bn1(self.conv1(x)))
         out = self.bneck(out)
         out = self.hs2(self.bn2(self.conv2(out)))
-        # out = F.avg_pool2d(out, 4) 
-        # out = F.avg_pool2d(out, 7) 
-        # out = self.hs3(self.bn3(self.conv3(out)))
-        # out = out.view(out.size(0), -1)
-        # out = self.hs3(self.bn3(self.linear3(out)))
-        # out = self.linear4(out)
-
         out = self.hs3(self.bn3(self.deconv3(out)))
-
         ret = {}
         for head in self.heads:
             ret[head] = self.__getattr__(head)(out)
